@@ -1,0 +1,14 @@
+# API and dashboard
+{$BOLVERSE_DOMAIN} {
+	encode gzip
+	reverse_proxy api:8000
+}
+
+# Web app (a single-page app: unknown paths fall back to index.html)
+{$BOLVERSE_APP_DOMAIN} {
+	encode gzip
+	root * /srv/web
+	try_files {path} /index.html
+	file_server
+	header /assets/* Cache-Control "public, max-age=31536000, immutable"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "bolverse",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "web": "npm run dev -w @bolverse/web",
+    "web:build": "npm run build -w @bolverse/web",
+    "mobile": "npm run start -w @bolverse/mobile",
+    "admin": "npm run dev -w @bolverse/admin",
+    "admin:build": "npm run build -w @bolverse/admin",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "overrides": {
+    "expo-asset": "~12.0.13",
+    "expo-constants": "~18.0.14"
+  }
+}

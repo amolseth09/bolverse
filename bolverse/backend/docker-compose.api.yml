@@ -1,0 +1,46 @@
+# Production on one small server (Oracle Cloud free tier or Hetzner), with automatic HTTPS:
+#   https://api.yourdomain.com            the API (apps talk to this)
+#   https://api.yourdomain.com/dashboard  the admin dashboard
+#   https://app.yourdomain.com            the web app
+# The AI runs on a GPU elsewhere (BOLVERSE_AI_URL in .env).
+#
+#   docker compose -f docker-compose.api.yml up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: bolverse
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: bolverse
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U bolverse -d bolverse"], interval: 5s, retries: 10}
+    restart: unless-stopped
+
+  api:
+    build: {context: ., dockerfile: Dockerfile.api}
+    env_file: .env
+    environment:
+      BOLVERSE_DATABASE_URL: postgresql+psycopg://bolverse:${POSTGRES_PASSWORD}@db:5432/bolverse
+      BOLVERSE_DASHBOARD_DIR: /srv/sites/dashboard
+    depends_on: {db: {condition: service_healthy}}
+    volumes:
+      - data:/data
+      - ./static/dashboard:/srv/sites/dashboard:ro  # built dashboard (included; rebuild with npm run admin:build)
+      - ./secrets:/srv/secrets:ro                   # firebase.json for push notifications (optional)
+    restart: unless-stopped
+
+  caddy:
+    # Gets and renews HTTPS certificates automatically (Let's Encrypt).
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    environment:
+      BOLVERSE_DOMAIN: ${BOLVERSE_DOMAIN:?set BOLVERSE_DOMAIN in .env, e.g. api.yourdomain.com}
+      BOLVERSE_APP_DOMAIN: ${BOLVERSE_APP_DOMAIN:-app.localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./sites/web:/srv/web:ro                     # built web app (apps/web/dist)
+      - caddy:/data
+    depends_on: [api]
+    restart: unless-stopped
+
+volumes: {pgdata: {}, data: {}, caddy: {}}

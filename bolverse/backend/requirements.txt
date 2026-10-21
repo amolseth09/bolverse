@@ -1,0 +1,6 @@
+# Everything in one process (Colab, a single GPU machine).
+-r requirements-api.txt
+-r requirements-ai.txt
+qrcode>=7.4
+pyjwt>=2.8
+cryptography>=42

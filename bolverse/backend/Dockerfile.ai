@@ -1,0 +1,17 @@
+# Bolverse AI worker for a GPU: RunPod serverless (load-balancing endpoint) or any GPU machine.
+# Two Python environments in one image: the AI worker (3.11) and the voice worker (3.12, Kokoro + Parler).
+FROM pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg git curl && rm -rf /var/lib/apt/lists/*
+WORKDIR /srv
+COPY requirements-api.txt requirements-ai.txt ./
+RUN pip install --no-cache-dir -r requirements-api.txt -r requirements-ai.txt
+# Voice worker environment
+RUN pip install --no-cache-dir uv && uv python install 3.12 && uv venv /opt/voice --python 3.12
+COPY voice_worker/requirements.txt voice_worker/requirements.txt
+RUN uv pip install --python /opt/voice/bin/python -r voice_worker/requirements.txt
+COPY app ./app
+COPY voice_worker ./voice_worker
+COPY start-ai.sh ./
+ENV HF_HOME=/runpod-volume/hf BOLVERSE_VOICE_WORKER_URL=http://127.0.0.1:8001 PORT=80
+EXPOSE 80
+CMD ["bash", "start-ai.sh"]

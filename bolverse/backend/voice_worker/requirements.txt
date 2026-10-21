@@ -1,0 +1,9 @@
+# Separate Python 3.12 environment: Kokoro doesn't support Python 3.13 yet and
+# Parler-TTS pins transformers==4.46.1, which the main server shouldn't be held back to.
+fastapi>=0.115
+uvicorn>=0.30
+numpy
+torch
+kokoro>=0.9.4
+misaki[en,zh,ja]>=0.9.4
+git+https://github.com/huggingface/parler-tts.git

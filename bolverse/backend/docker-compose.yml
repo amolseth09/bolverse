@@ -1,0 +1,63 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: bolverse
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: bolverse
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bolverse -d bolverse"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+    # Not published to the host: only the API container can reach the database.
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      BOLVERSE_DATABASE_URL: postgresql+psycopg://bolverse:${POSTGRES_PASSWORD:-change-me}@db:5432/bolverse
+      BOLVERSE_VOICE_WORKER_URL: http://voice:8001
+    depends_on:
+      db:
+        condition: service_healthy
+      voice:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    volumes:
+      - models:/models   # Hugging Face downloads, kept between restarts
+      - data:/data       # cached lessons
+    restart: unless-stopped
+    # Uncomment for an NVIDIA GPU (and build with the CUDA base image, see Dockerfile)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  voice:
+    # Male and female voices (Indic Parler-TTS + Kokoro), in its own Python 3.12 image
+    build:
+      context: .
+      dockerfile: voice_worker/Dockerfile
+    volumes:
+      - models:/models
+    restart: unless-stopped
+    # Share the GPU as well (uncomment together with the api service's GPU block)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+volumes:
+  pgdata:
+  models:
+  data:

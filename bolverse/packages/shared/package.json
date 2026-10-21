@@ -1,0 +1,18 @@
+{
+  "name": "@bolverse/shared",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "esbuild tests/*.test.ts --bundle --platform=node --format=cjs --packages=external --outdir=.test-build --log-level=warning && node --test .test-build/*.test.js"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "@types/qrcode": "^1.5.5"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
+}
